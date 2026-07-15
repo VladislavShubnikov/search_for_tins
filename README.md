@@ -21,7 +21,8 @@ accountants/administrative who need to verify the relevance of
 information for a large number of counterparties 
 (e.g., sellers and buyers). This script allows you to 
 find out whether a legal entity or individual is an 
-active company (or a closed company), obtain the KPP (КПП) number, 
+active company (or a closed company), obtain 
+the Registration Reason Code (КПП), 
 and obtain company registration details.
 
 ## Search for the Taxpayer Identification Number (TIN)
@@ -36,7 +37,7 @@ taxpayer (if the taxpayer identification number is found).
 These manual steps can be illustrated in the screenshot below:
 ![two user actions](./doc/uscr_web_site.png)
 
-Some software products, such as 1C Accounting (1С Бухгалтерия), allow you 
+Some software products, such as `1C Bookkeeping` (1С Бухгалтерия), allow you 
 to obtain detailed information about a single legal entity.
 But sometimes you need to obtain this information for 
 hundreds or thousands of companies at once.
@@ -80,9 +81,9 @@ Required software / packages:
 
 ## Possible search performance improvements
 
-Использование futures.ProcessPoolExecutor не применимо для данной задачи, так как
-государственный сайт имеет защиту от слишком частых поисковых обращений,
-исходящих от одного и того же IP адреса
+Using futures.ProcessPoolExecutor is not applicable for this task, 
+since the government website has protection against too 
+frequent search requests coming from the same IP address.
 
 ## Performance results
 
