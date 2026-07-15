@@ -7,6 +7,7 @@
 *    [Prerequisites](#prerequisites)
 *    [Possible search performance improvements](#possible-search-performance-improvements)
 *    [Performance results](#performance-results)
+*    [Script Operation Correctness](#script-operation-correctness)
 *    [Run applications and tests](#run-applications-and-tests)
      *    [Run main appplication](#run-main-appplication)
      *    [Run tests](#run-tests)
@@ -88,6 +89,15 @@ frequent search requests coming from the same IP address.
 ## Performance results
 
 1 company processed during 1.19 seconds approximately.
+
+## Script Operation Correctness
+
+Since the script uses internal data about the web page 
+structure of the State Register of Legal Entities website, 
+the script may stop working correctly in the future 
+if the internal structure of the request and response page 
+on the government website is changed. Last functional check
+was performed in july 2026.
 
 ## Run applications and tests
 
