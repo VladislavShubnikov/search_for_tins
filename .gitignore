@@ -1,0 +1,13 @@
+syntax: glob
+thumbs.db
+Thumbs.db
+*.pyc
+*.bak
+*.obj
+build/
+.doxygen/
+.idea/
+.mypy_cache/
+.pytest_cache/
+.ruff_cache/
+
