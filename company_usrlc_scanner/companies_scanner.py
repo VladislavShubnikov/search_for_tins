@@ -1,6 +1,11 @@
 #!/usr/bin/env python3
 """
 Search company details from Unified State Registry for Legal Companies.
+
+The goal of this script is to find details about legal companies from
+State Registry for Legal Companies website. This script allows you to receive
+hundreds-thousands result for the list of taxpayer numbers. Unlike search this
+information "by hand", this script performs this search in automatic mode.
 """
 # MIT License
 #
@@ -47,14 +52,18 @@ from selenium.webdriver.support import expected_conditions as ec
 from selenium.webdriver.support.ui import WebDriverWait
 from webdriver_manager.chrome import ChromeDriverManager
 
-# Define Windows API flags
+# Define Windows API flags, required for sleep on/off functionality
 ES_CONTINUOUS = 0x80000000
 ES_SYSTEM_REQUIRED = 0x00000001
 ES_DISPLAY_REQUIRED = 0x00000002
 
 
 def prevent_sleep():
-    """Keeps the system awake and screen turned on continuously."""
+    """
+    Keeps the system awake and the screen turned on continuously.
+    This code is optional. In most cases script will perform
+    all actions shortly, so you need not prevent windows sleeping.
+    """
     ctypes.windll.kernel32.SetThreadExecutionState(
         ES_CONTINUOUS | ES_SYSTEM_REQUIRED | ES_DISPLAY_REQUIRED
     )
@@ -68,29 +77,46 @@ def allow_sleep():
 @dataclass
 class CompanyNumbers:
     """ Digital values for company details"""
+    ## individual taxpayer number ("INN" in russian)
     tpn: str = ''
+    ## Company registration number ("OGRN" in russian)
     state_reg_number: str = ''
+    ## Date of company registration
     date_state_reg_number: str = ''
+    ## Code for registration reason ("KPP" in russian)
     kpp: str = ''
 
 
 @dataclass
 class Company:
     """ Single company detail. tpn and short_name is input """
+    ## numbers data for company. please see @CompanyNumbers
     numbers: CompanyNumbers = field(default_factory=CompanyNumbers)
+    ## short name of th company
     short_name: str = ''
+    ## Has company active registration (or closed)
     active_status: bool = True
+    ## Closure date (for closed companies only)
     date_closed: str = ''
+    ## Registration region of the company
     region: str = ''
+    ## Optional text details. In most cases,
+    # it can be the name of the official company head
     company_details: str = ''
 
 
 class WebWorm:
-    """ Web crawler """
+    """ Web crawler. This class performs
+    automatic company data extraction from series of web requests
+    Each request for each company in input list.
+    """
     def __init__(self):
-
         options = webdriver.ChromeOptions()
-        # options.add_argument("--headless")
+        # Here option "--headless" can be added via "add_argument".
+        # This means that during script run you will not
+        # see results of web search on the screen.
+        # This option can slightly speed up the search,
+        # but you will not be able to see the "progress"
         options.add_argument("--disable-gpu")
 
         self.driver = webdriver.Chrome(
@@ -99,11 +125,18 @@ class WebWorm:
         )
 
     def close(self):
-        """ Close web interface """
+        """
+        @brief Close web interface
+        """
         self.driver.quit()
 
     def get_tax_payer_info(self, url: str, personal_tax_number: str) -> str:
-        """ Get taxpayer info """
+        """
+        @brief Get taxpayer info
+        @param[in] url website of company info search service
+        @param[in] personal_tax_number Taxpayer individual number
+        @return text result of company data search (can be parsed later)
+        """
         out = ''
         try:
             self.driver.get(url)
@@ -116,13 +149,11 @@ class WebWorm:
                 ec.presence_of_element_located((By.ID, "query"))
             )
 
-            # text_field = driver.find_element(By.ID, "query")
             text_field.send_keys(personal_tax_number)
 
             button = wait.until(
                 ec.presence_of_element_located((By.ID, "btnSearch"))
             )
-            # button = driver.find_element(By.ID, "btnSearch")
             button.click()
 
             # Pause briefly to wait site search completion (seconds)
@@ -137,7 +168,6 @@ class WebWorm:
             time_out = 0.2
             time.sleep(time_out)
 
-            # div_result = driver.find_element(By.CLASS_NAME, "res-text")
             if div_result is not None:
                 out = div_result.text
 
@@ -156,7 +186,12 @@ class WebWorm:
         return out
 
     def get_company_info(self, personal_tax_number: str, short_name: str = '') -> Company:
-        """ Get structure company details"""
+        """
+        @bried Get structure company details
+        @param[in] personal_tax_number Individual company taxpayer number
+        @param[in] short_name Short name of the company
+        @return Company detailed description
+        """
         company = Company()
 
         # input data
@@ -225,7 +260,11 @@ class WebWorm:
 
 
 def print_company(company: Company) -> None:
-    """ Print info about company """
+    """
+    @bried Print info about company
+    This method is just for debugging purposes.
+    @param company: Company detailed description
+    """
     print('--------------------')
     print(f'ИНН: {company.numbers.tpn}')
     print(f'ИмяСокр: {company.short_name}')
@@ -240,7 +279,16 @@ def print_company(company: Company) -> None:
 
 
 def get_csv_out_name(index_out: int) -> Path:
-    """ Get temp csv output file name """
+    """
+    @brief Get temp csv output file name
+    Collected results are placed into series of
+    csv files to do not overload system with too much
+    data: collect first N companies, save them, collect
+    next N companies, save them again, etc.
+
+    @param[in] index_out Index of temporary csv output file
+    @return Path to output file
+    """
     script_dir = Path(__file__).parent.parent.resolve()
     name_out = f'out_{index_out:04d}.csv'
     file_path = script_dir / "data" / name_out
@@ -248,7 +296,16 @@ def get_csv_out_name(index_out: int) -> Path:
 
 
 def collect_tpn_from_web(arr_input: List[List[str]], num_results: int) -> int:
-    """ Create tables """
+    """
+    @bried Create companies info, collecting data from web requests
+
+    In the success, a lot of temporary CSV files will be created in the
+    data/out folder. All of them will be merged into the single CSV table later.
+
+    @param[in] arr_input List of companies info. Each row has number and short name
+    @param[in] num_results Number of companies in the single CSV result table
+    @return number of companies collected
+    """
 
     data_out : dict = {
         'short_name': [],
@@ -344,8 +401,13 @@ def collect_tpn_from_web(arr_input: List[List[str]], num_results: int) -> int:
     return len(arr_input)
 
 
-def merge_output(in_short_file_name: str):
-    """ Merge output csv files"""
+def merge_output(in_short_file_name: str) -> None:
+    """
+    @brief Merge output csv files
+    Merge all collected temporary CSV files with companies info
+    into the single output file
+    @param[in] in_short_file_name Input file name (be copied for output file)
+    """
     input_tables = []
     for i in range (0, 2048):
         file_name_short = f'out_{i:04d}.csv'
@@ -381,7 +443,15 @@ def merge_output(in_short_file_name: str):
 
 
 def load_input(short_name: str) -> List[List[str]]:
-    """ Load original companies csv file with name + tpn """
+    """
+    @brief Load original companies csv file with name + tpn
+    Read input CSV file in the form like:
+    company01, tpn01
+    company02, tpn02
+    ...
+    @param[in] short_name Input CSV file name
+    @return List of list with format elem[0]: name, elem[1]: tpn
+    """
     script_dir = Path(__file__).parent.parent.resolve()
     file_path = script_dir / "data" / "in" / short_name
     out = []
@@ -406,7 +476,7 @@ def load_input(short_name: str) -> List[List[str]]:
     return out
 
 
-def main():
+def main() -> None:
     """ Main function: run web worm """
     parser = argparse.ArgumentParser(
         description=
